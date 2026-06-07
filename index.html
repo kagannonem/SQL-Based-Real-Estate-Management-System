@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Real Estate Management System</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap');
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #f4f2ee; --surface: #ffffff; --border: #e2ddd6;
+    --text: #1a1814; --muted: #7a756e; --accent: #14ace3;
+    --accent-light: #eef1fd; --danger: #c0392b; --success: #1e7e34;
+    --warn: #d68910; --sidebar-w: 220px;
+  }
+  body { font-family: 'Times New Roman', sans-serif; background: var(--bg); color: var(--text); display: flex; min-height: 100vh; font-size: 14px; }
+  #sidebar { width: var(--sidebar-w); background: var(--surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; position: fixed; top: 0; left: 0; bottom: 0; z-index: 10; }
+  .sidebar-logo { padding: 24px 20px 20px; border-bottom: 1px solid var(--border); }
+  .sidebar-logo h1 { font-size: 13px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--accent); }
+  .sidebar-logo p { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  nav { flex: 1; padding: 12px 0; overflow-y: auto; }
+  .nav-section { padding: 8px 20px 4px; font-size: 10px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+  .nav-item { display: flex; align-items: center; gap: 10px; padding: 9px 20px; cursor: pointer; color: var(--muted); font-size: 13.5px; font-weight: 400; border-left: 2px solid transparent; transition: all 0.15s; }
+  .nav-item:hover { background: var(--bg); color: var(--text); }
+  .nav-item.active { background: var(--accent-light); color: var(--accent); border-left-color: var(--accent); font-weight: 500; }
+  .nav-icon { font-family: 'DM Mono', monospace; font-size: 11px; width: 18px; text-align: center; opacity: 0.7; }
+  #main { margin-left: var(--sidebar-w); flex: 1; display: flex; flex-direction: column; min-height: 100vh; }
+  .topbar { background: var(--surface); border-bottom: 1px solid var(--border); padding: 14px 32px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 5; }
+  .topbar h2 { font-size: 16px; font-weight: 500; }
+  .btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: 6px; font-family: inherit; font-size: 13px; font-weight: 500; cursor: pointer; border: none; transition: all 0.15s; }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary:hover { background: #2149c7; }
+  .btn-ghost { background: transparent; color: var(--muted); border: 1px solid var(--border); }
+  .btn-ghost:hover { background: var(--bg); color: var(--text); }
+  .btn-danger { background: #fdf0ef; color: var(--danger); border: 1px solid #f5c6c3; font-size: 12px; padding: 5px 10px; }
+  .btn-danger:hover { background: #fde2e0; }
+  .btn-sell { background: #e8f5e9; color: var(--success); border: 1px solid #c8e6c9; font-size: 12px; padding: 5px 10px; }
+  .btn-sell:hover { background: #d4edda; }
+  .content { padding: 28px 32px; flex: 1; }
+  .stats-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 16px; margin-bottom: 28px; }
+  .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 18px 20px; }
+  .stat-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; }
+  .stat-value { font-size: 26px; font-weight: 300; color: var(--text); font-family: 'DM Mono', monospace; }
+  .table-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+  .table-header { padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+  .table-title { font-size: 13px; font-weight: 500; }
+  table { width: 100%; border-collapse: collapse; }
+  thead th { padding: 10px 16px; text-align: left; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); background: var(--bg); border-bottom: 1px solid var(--border); }
+  tbody tr { border-bottom: 1px solid var(--border); transition: background 0.1s; }
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr:hover { background: var(--bg); }
+  tbody td { padding: 11px 16px; font-size: 13px; }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 500; }
+  .badge-green { background: #e8f5e9; color: var(--success); }
+  .badge-blue { background: var(--accent-light); color: var(--accent); }
+  .badge-amber { background: #fef9e7; color: var(--warn); }
+  .badge-red { background: #fdf0ef; color: var(--danger); }
+  .badge-gray { background: var(--bg); color: var(--muted); }
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.3); z-index: 100; display: none; align-items: center; justify-content: center; }
+  .modal-overlay.open { display: flex; }
+  .modal { background: var(--surface); border-radius: 12px; padding: 28px; width: 480px; max-width: 95vw; box-shadow: 0 20px 60px rgba(0,0,0,0.15); }
+  .modal h3 { font-size: 16px; font-weight: 500; margin-bottom: 20px; }
+  .form-group { margin-bottom: 14px; }
+  .form-group label { display: block; font-size: 12px; font-weight: 500; color: var(--muted); margin-bottom: 5px; }
+  .form-group input, .form-group select { width: 100%; padding: 9px 12px; border: 1px solid var(--border); border-radius: 6px; font-family: inherit; font-size: 13px; background: var(--bg); color: var(--text); outline: none; transition: border-color 0.15s; }
+  .form-group input:focus, .form-group select:focus { border-color: var(--accent); background: #fff; }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
+  .loading { text-align: center; padding: 40px; color: var(--muted); font-size: 13px; }
+  .error-msg { background: #fdf0ef; color: var(--danger); padding: 10px 14px; border-radius: 6px; font-size: 13px; margin-bottom: 16px; display: none; }
+  .page { display: none; }
+  .page.active { display: block; }
+</style>
+</head>
+<body>
+
+<div id="sidebar">
+  <div class="sidebar-logo">
+    <h1>Best Sellers</h1>
+    <p>Yıldız Technical University</p>
+  </div>
+  <nav>
+    <div class="nav-section">Home</div>
+    <div class="nav-item active" onclick="showPage('dashboard', this)"><span class="nav-icon">#</span> Dashboard</div>
+    <div class="nav-section">Tables</div>
+    <div class="nav-item" onclick="showPage('properties', this)"><span class="nav-icon">P</span> Properties</div>
+    <div class="nav-item" onclick="showPage('agents', this)"><span class="nav-icon">A</span> Agents</div>
+    <div class="nav-item" onclick="showPage('clients', this)"><span class="nav-icon">C</span> Clients</div>
+    <div class="nav-item" onclick="showPage('listings', this)"><span class="nav-icon">L</span> Listings</div>
+    <div class="nav-item" onclick="showPage('viewings', this)"><span class="nav-icon">V</span> Viewings</div>
+    <div class="nav-item" onclick="showPage('transactions', this)"><span class="nav-icon">T</span> Transactions</div>
+    <div class="nav-section">Reports</div>
+    <div class="nav-item" onclick="showPage('reports', this)"><span class="nav-icon">R</span> General Analysis</div>
+  </nav>
+</div>
+
+<div id="main">
+  <div class="page active" id="page-dashboard">
+    <div class="topbar"><h2>Dashboard</h2></div>
+    <div class="content">
+      <div class="stats-grid">
+        <div class="stat-card"><div class="stat-label">Properties</div><div class="stat-value" id="stat-props">—</div></div>
+        <div class="stat-card"><div class="stat-label">Agents</div><div class="stat-value" id="stat-agents">—</div></div>
+        <div class="stat-card"><div class="stat-label">Clients</div><div class="stat-value" id="stat-clients">—</div></div>
+        <div class="stat-card"><div class="stat-label">Listings</div><div class="stat-value" id="stat-listings">—</div></div>
+        <div class="stat-card"><div class="stat-label">Viewings</div><div class="stat-value" id="stat-viewings">—</div></div>
+        <div class="stat-card"><div class="stat-label">Transactions</div><div class="stat-value" id="stat-transactions">—</div></div>
+      </div>
+      <div class="table-card">
+        <div class="table-header"><span class="table-title">Active Listings</span></div>
+        <div id="dash-listings-body"><div class="loading">Loading...</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="page" id="page-properties">
+    <div class="topbar"><h2>Properties</h2><button class="btn btn-primary" onclick="openModal('modal-property')">+ Add</button></div>
+    <div class="content"><div class="table-card"><div id="properties-body"><div class="loading">Loading...</div></div></div></div>
+  </div>
+
+  <div class="page" id="page-agents">
+    <div class="topbar"><h2>Agents</h2><button class="btn btn-primary" onclick="openModal('modal-agent')">+ Add</button></div>
+    <div class="content"><div class="table-card"><div id="agents-body"><div class="loading">Loading...</div></div></div></div>
+  </div>
+
+  <div class="page" id="page-clients">
+    <div class="topbar"><h2>Clients</h2><button class="btn btn-primary" onclick="openModal('modal-client')">+ Add</button></div>
+    <div class="content"><div class="table-card"><div id="clients-body"><div class="loading">Loading...</div></div></div></div>
+  </div>
+
+  <div class="page" id="page-listings">
+    <div class="topbar"><h2>Listings</h2><button class="btn btn-primary" onclick="openModal('modal-listing')">+ Add</button></div>
+    <div class="content"><div class="table-card"><div id="listings-body"><div class="loading">Loading...</div></div></div></div>
+  </div>
+
+  <div class="page" id="page-viewings">
+    <div class="topbar"><h2>Viewings</h2><button class="btn btn-primary" onclick="openModal('modal-viewing')">+ Add</button></div>
+    <div class="content"><div class="table-card"><div id="viewings-body"><div class="loading">Loading...</div></div></div></div>
+  </div>
+
+  <div class="page" id="page-transactions">
+    <div class="topbar"><h2>Transactions</h2><button class="btn btn-primary" onclick="openModal('modal-transaction')">+ Add</button></div>
+    <div class="content"><div class="table-card"><div id="transactions-body"><div class="loading">Loading...</div></div></div></div>
+  </div>
+
+  <div class="page" id="page-reports">
+    <div class="topbar"><h2>SQL Reports</h2></div>
+    <div class="content">
+      <div style="display:grid;gap:20px;">
+        <div class="table-card"><div class="table-header"><span class="table-title">Average Price by District (GROUP BY + AVG)</span></div><div id="report-district"><div class="loading">Loading...</div></div></div>
+        <div class="table-card"><div class="table-header"><span class="table-title">Agent Revenue Report (JOIN + SUM + GROUP BY)</span></div><div id="report-revenue"><div class="loading">Loading...</div></div></div>
+        <div class="table-card"><div class="table-header"><span class="table-title">Viewings per Listing (LEFT JOIN + COUNT + HAVING)</span></div><div id="report-viewings"><div class="loading">Loading...</div></div></div>
+        <div class="table-card"><div class="table-header"><span class="table-title">Management Hierarchy (Self JOIN)</span></div><div id="report-hierarchy"><div class="loading">Loading...</div></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODALS -->
+<div class="modal-overlay" id="modal-property">
+  <div class="modal">
+    <h3>Add New Property</h3>
+    <div class="error-msg" id="err-property"></div>
+    <div class="form-row">
+      <div class="form-group"><label>Type</label><select id="p-type"><option>Apartment</option><option>Villa</option><option>Studio</option><option>Office Space</option></select></div>
+      <div class="form-group"><label>City</label><input id="p-city" value="Istanbul"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>District</label><input id="p-district" placeholder="Kadikoy"></div>
+      <div class="form-group"><label>Area (m²)</label><input id="p-area" type="number" placeholder="120"></div>
+    </div>
+    <div class="form-group"><label>Asking Price (₺)</label><input id="p-price" type="number" placeholder="4500000"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('modal-property')">Cancel</button>
+      <button class="btn btn-primary" onclick="submitProperty()">Save</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-agent">
+  <div class="modal">
+    <h3>Add New Agent</h3>
+    <div class="error-msg" id="err-agent"></div>
+    <div class="form-group"><label>Full Name</label><input id="a-name" placeholder="John Smith"></div>
+    <div class="form-group"><label>Email</label><input id="a-email" placeholder="john@agency.com"></div>
+    <div class="form-row">
+      <div class="form-group"><label>Office ID</label><input id="a-office" type="number" value="1"></div>
+      <div class="form-group"><label>Manager ID (optional)</label><input id="a-manager" type="number" placeholder="leave blank if none"></div>
+    </div>
+    <div class="form-group"><label>Level</label><select id="a-level"><option>Junior</option><option>Senior Agent</option><option>Manager</option><option>Director</option></select></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('modal-agent')">Cancel</button>
+      <button class="btn btn-primary" onclick="submitAgent()">Save</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-client">
+  <div class="modal">
+    <h3>Add New Client</h3>
+    <div class="error-msg" id="err-client"></div>
+    <div class="form-group"><label>Full Name</label><input id="c-name" placeholder="Jane Doe"></div>
+    <div class="form-row">
+      <div class="form-group"><label>Phone</label><input id="c-phone" placeholder="+905321112233"></div>
+      <div class="form-group"><label>Email</label><input id="c-mail" placeholder="jane@mail.com"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Type</label><select id="c-type"><option>Buyer</option><option>Seller</option><option>Both</option></select></div>
+      <div class="form-group"><label>Registration Date</label><input id="c-date" type="date"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('modal-client')">Cancel</button>
+      <button class="btn btn-primary" onclick="submitClient()">Save</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-listing">
+  <div class="modal">
+    <h3>Add New Listing</h3>
+    <div class="error-msg" id="err-listing"></div>
+    <div class="form-row">
+      <div class="form-group"><label>Property</label><select id="l-prop"><option value="">Loading...</option></select></div>
+      <div class="form-group"><label>Agent</label><select id="l-agent"><option value="">Loading...</option></select></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Owner (Client)</label><select id="l-owner"><option value="">Loading...</option></select></div>
+      <div class="form-group"><label>Start Date</label><input id="l-date" type="date"></div>
+    </div>
+    <div class="form-group"><label>Listing Price (₺)</label><input id="l-price" type="number" placeholder="4500000"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('modal-listing')">Cancel</button>
+      <button class="btn btn-primary" onclick="submitListing()">Save</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-viewing">
+  <div class="modal">
+    <h3>Add New Viewing</h3>
+    <div class="error-msg" id="err-viewing"></div>
+    <div class="form-row">
+      <div class="form-group"><label>Listing</label><select id="v-listing"><option value="">Loading...</option></select></div>
+      <div class="form-group"><label>Client</label><select id="v-client"><option value="">Loading...</option></select></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Agent</label><select id="v-agent"><option value="">Loading...</option></select></div>
+      <div class="form-group"><label>Date</label><input id="v-date" type="date"></div>
+    </div>
+    <div class="form-group"><label>Feedback</label><input id="v-feedback" placeholder="Client feedback..."></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('modal-viewing')">Cancel</button>
+      <button class="btn btn-primary" onclick="submitViewing()">Save</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-transaction">
+  <div class="modal">
+    <h3>Record Sale</h3>
+    <div class="error-msg" id="err-transaction"></div>
+    <div class="form-row">
+      <div class="form-group"><label>Listing</label><select id="tr-listing"><option value="">Loading...</option></select></div>
+      <div class="form-group"><label>Buyer (Client)</label><select id="tr-buyer"><option value="">Loading...</option></select></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Agent</label><select id="tr-agent"><option value="">Loading...</option></select></div>
+      <div class="form-group"><label>Date</label><input id="tr-date" type="date"></div>
+    </div>
+    <div class="form-group"><label>Sale Amount (₺)</label><input id="tr-amount" type="number" placeholder="4000000"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('modal-transaction')">Cancel</button>
+      <button class="btn btn-primary" onclick="submitTransaction()">Save</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const API = 'http://127.0.0.1:8000';
+
+async function api(path, method='GET', body=null) {
+  const opts = { method, headers: {'Content-Type':'application/json'} };
+  if (body) opts.body = JSON.stringify(body);
+  const r = await fetch(API + path, opts);
+  if (!r.ok) throw new Error((await r.json()).detail || 'Error');
+  return r.json();
+}
+
+function fmt(n) { return Number(n).toLocaleString('en-US'); }
+
+function badge(val) {
+  const map = { Available:'green', Active:'green', Buyer:'blue', Both:'blue', Seller:'amber', Closed:'gray', Sold:'red', Junior:'gray', Manager:'blue', Director:'amber', 'Senior Agent':'green' };
+  const c = map[val] || 'gray';
+  return `<span class="badge badge-${c}">${val}</span>`;
+}
+
+function showPage(name, el) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  el.classList.add('active');
+  loaders[name] && loaders[name]();
+}
+
+async function openModal(id) {
+  document.getElementById(id).classList.add('open');
+  if (id === 'modal-listing') await fillListingDropdowns();
+  if (id === 'modal-viewing') await fillViewingDropdowns();
+  if (id === 'modal-transaction') await fillTransactionDropdowns();
+}
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+document.querySelectorAll('.modal-overlay').forEach(o => o.addEventListener('click', e => { if (e.target === o) o.classList.remove('open'); }));
+
+async function fillSelect(selectId, url, valKey, labelFn) {
+  const {data} = await api(url);
+  document.getElementById(selectId).innerHTML = data.map(d => `<option value="${d[valKey]}">${labelFn(d)}</option>`).join('');
+}
+
+async function fillListingDropdowns() {
+  await Promise.all([
+    fillSelect('l-prop', '/api/properties/simple', 'PropertyID', d => `#${d.PropertyID} — ${d.PropertyType} (${d.District})`),
+    fillSelect('l-agent', '/api/agents/simple', 'AgentID', d => `#${d.AgentID} — ${d.AgentName}`),
+    fillSelect('l-owner', '/api/clients/simple', 'ClientID', d => `#${d.ClientID} — ${d.ClientName}`)
+  ]);
+}
+
+async function fillViewingDropdowns() {
+  await Promise.all([
+    fillSelect('v-listing', '/api/listings/simple', 'ListingID', d => `#${d.ListingID} (${d.Status})`),
+    fillSelect('v-client', '/api/clients/simple', 'ClientID', d => `#${d.ClientID} — ${d.ClientName}`),
+    fillSelect('v-agent', '/api/agents/simple', 'AgentID', d => `#${d.AgentID} — ${d.AgentName}`)
+  ]);
+}
+
+async function fillTransactionDropdowns() {
+  await Promise.all([
+    fillSelect('tr-listing', '/api/listings/simple', 'ListingID', d => `#${d.ListingID} (${d.Status})`),
+    fillSelect('tr-buyer', '/api/clients/simple', 'ClientID', d => `#${d.ClientID} — ${d.ClientName}`),
+    fillSelect('tr-agent', '/api/agents/simple', 'AgentID', d => `#${d.AgentID} — ${d.AgentName}`)
+  ]);
+}
+
+function showErr(id, msg) {
+  const el = document.getElementById(id);
+  el.textContent = msg; el.style.display = 'block';
+  setTimeout(() => el.style.display = 'none', 4000);
+}
+
+
+async function loadDashboard() {
+  try {
+    const [props, agents, clients, listings, viewings, transactions] = await Promise.all([
+      api('/api/properties'), api('/api/agents'), api('/api/clients'),
+      api('/api/listings'), api('/api/viewings'), api('/api/transactions')
+    ]);
+    document.getElementById('stat-props').textContent = props.data.length;
+    document.getElementById('stat-agents').textContent = agents.data.length;
+    document.getElementById('stat-clients').textContent = clients.data.length;
+    document.getElementById('stat-listings').textContent = listings.data.length;
+    document.getElementById('stat-viewings').textContent = viewings.data.length;
+    document.getElementById('stat-transactions').textContent = transactions.data.length;
+    const active = listings.data.filter(l => l.Status === 'Active');
+    document.getElementById('dash-listings-body').innerHTML = `
+      <table><thead><tr><th>Type</th><th>District</th><th>Area</th><th>Price</th><th>Agent</th></tr></thead>
+      <tbody>${active.length ? active.map(l => `<tr>
+        <td>${l.PropertyType}</td><td>${l.District}</td>
+        <td>${l.Area} m²</td><td>₺${fmt(l.ListingPrice)}</td>
+        <td>${l.AgentName}</td>
+      </tr>`).join('') : '<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--muted)">No active listings</td></tr>'}</tbody></table>`;
+  } catch(e) { console.error(e); }
+}
+
+async function loadProperties() {
+  const {data} = await api('/api/properties');
+  document.getElementById('properties-body').innerHTML = `
+    <table><thead><tr><th>ID</th><th>Type</th><th>City</th><th>District</th><th>Area</th><th>Asking Price</th><th>Status</th><th></th></tr></thead>
+    <tbody>${data.map(p => `<tr>
+      <td style="color:var(--muted);font-family:'DM Mono',monospace">${p.PropertyID}</td>
+      <td>${p.PropertyType}</td><td>${p.City}</td><td>${p.District}</td>
+      <td>${p.Area} m²</td><td>₺${fmt(p.AskingPrice)}</td>
+      <td>${badge(p.Status)}</td>
+      <td style="display:flex;gap:6px">
+        ${p.Status !== 'Sold' ? `<button class="btn btn-sell" onclick="sellProperty(${p.PropertyID})">Sell</button>` : ''}
+        <button class="btn btn-danger" onclick="deleteProperty(${p.PropertyID})">Delete</button>
+      </td>
+    </tr>`).join('')}</tbody></table>`;
+}
+
+async function loadAgents() {
+  const [{data: simple}, {data: hier}] = await Promise.all([api('/api/agents/simple'), api('/api/agents/hierarchy')]);
+  const hierMap = {};
+  hier.forEach(h => { hierMap[h.employee] = h; });
+  document.getElementById('agents-body').innerHTML = `
+    <table><thead><tr><th>ID</th><th>Name</th><th>Level</th><th>Reports To</th><th>Manager Level</th><th></th></tr></thead>
+    <tbody>${simple.map(a => {
+      const h = hierMap[a.AgentName] || {};
+      return `<tr>
+        <td style="color:var(--muted);font-family:'DM Mono',monospace">${a.AgentID}</td>
+        <td>${a.AgentName}</td>
+        <td>${badge(h.emp_level || '—')}</td>
+        <td>${h.reports_to || '<span style="color:var(--muted)">—</span>'}</td>
+        <td>${h.mgr_level ? badge(h.mgr_level) : ''}</td>
+        <td><button class="btn btn-danger" onclick="deleteAgent(${a.AgentID})">Delete</button></td>
+      </tr>`;
+    }).join('')}</tbody></table>`;
+}
+
+async function loadClients() {
+  const {data} = await api('/api/clients');
+  document.getElementById('clients-body').innerHTML = `
+    <table><thead><tr><th>ID</th><th>Name</th><th>Phone</th><th>Email</th><th>Type</th><th>Registered</th><th></th></tr></thead>
+    <tbody>${data.map(c => `<tr>
+      <td style="color:var(--muted);font-family:'DM Mono',monospace">${c.ClientID}</td>
+      <td>${c.ClientName}</td><td>${c.ClientPhone}</td><td>${c.ClientMail}</td>
+      <td>${badge(c.ClientType)}</td><td>${c.RegDate}</td>
+      <td><button class="btn btn-danger" onclick="deleteClient(${c.ClientID})">Delete</button></td>
+    </tr>`).join('')}</tbody></table>`;
+}
+
+async function loadListings() {
+  const {data} = await api('/api/listings');
+  document.getElementById('listings-body').innerHTML = `
+    <table><thead><tr><th>ID</th><th>Type</th><th>District</th><th>Price</th><th>Agent</th><th>Owner</th><th>Status</th><th></th></tr></thead>
+    <tbody>${data.map(l => `<tr>
+      <td style="color:var(--muted);font-family:'DM Mono',monospace">${l.ListingID}</td>
+      <td>${l.PropertyType}</td><td>${l.District}</td>
+      <td>₺${fmt(l.ListingPrice)}</td>
+      <td>${l.AgentName}</td><td>${l.OwnerName}</td>
+      <td>${badge(l.Status)}</td>
+      <td><button class="btn btn-danger" onclick="deleteListing(${l.ListingID})">Delete</button></td>
+    </tr>`).join('')}</tbody></table>`;
+}
+
+async function loadViewings() {
+  const {data} = await api('/api/viewings');
+  document.getElementById('viewings-body').innerHTML = `
+    <table><thead><tr><th>ID</th><th>Date</th><th>Client</th><th>Agent</th><th>Property</th><th>Feedback</th><th></th></tr></thead>
+    <tbody>${data.map(v => `<tr>
+      <td style="color:var(--muted);font-family:'DM Mono',monospace">${v.ViewingID}</td>
+      <td>${v.ViewingDate}</td><td>${v.ClientName}</td><td>${v.AgentName}</td>
+      <td>${v.PropertyType} — ${v.District}</td>
+      <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--muted)">${v.Feedback||'—'}</td>
+      <td><button class="btn btn-danger" onclick="deleteViewing(${v.ViewingID})">Delete</button></td>
+    </tr>`).join('')}</tbody></table>`;
+}
+
+async function loadTransactions() {
+  const {data} = await api('/api/transactions');
+  document.getElementById('transactions-body').innerHTML = `
+    <table><thead><tr><th>ID</th><th>Date</th><th>Buyer</th><th>Agent</th><th>Property</th><th>Amount</th></tr></thead>
+    <tbody>${data.length ? data.map(t => `<tr>
+      <td style="color:var(--muted);font-family:'DM Mono',monospace">${t.TransactionID}</td>
+      <td>${t.TransactionDate}</td><td>${t.BuyerName}</td><td>${t.AgentName}</td>
+      <td>${t.PropertyType} — ${t.District}</td>
+      <td style="font-family:'DM Mono',monospace;font-weight:500">₺${fmt(t.Amount)}</td>
+    </tr>`).join('') : '<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--muted)">No transactions yet</td></tr>'}</tbody></table>`;
+}
+
+async function loadReports() {
+  try {
+    const [district, revenue, viewingCounts, hierarchy] = await Promise.all([
+      api('/api/properties/stats'), api('/api/transactions/revenue'),
+      api('/api/listings/viewings-count'), api('/api/agents/hierarchy')
+    ]);
+    document.getElementById('report-district').innerHTML = `
+      <table><thead><tr><th>District</th><th>Total Properties</th><th>Average Price</th></tr></thead>
+      <tbody>${district.data.map(d => `<tr><td>${d.District}</td><td>${d.total}</td><td style="font-family:'DM Mono',monospace">₺${fmt(Math.round(d.avg_price))}</td></tr>`).join('')}</tbody></table>`;
+    document.getElementById('report-revenue').innerHTML = `
+      <table><thead><tr><th>Agent</th><th>Closed Deals</th><th>Total Revenue</th></tr></thead>
+      <tbody>${revenue.data.length ? revenue.data.map(r => `<tr><td>${r.AgentName}</td><td>${r.total_deals}</td><td style="font-family:'DM Mono',monospace;font-weight:500">₺${fmt(r.total_revenue)}</td></tr>`).join('') : '<tr><td colspan="3" style="color:var(--muted);text-align:center;padding:20px">No transactions yet</td></tr>'}</tbody></table>`;
+    document.getElementById('report-viewings').innerHTML = `
+      <table><thead><tr><th>Listing ID</th><th>Type</th><th>District</th><th>Viewings</th></tr></thead>
+      <tbody>${viewingCounts.data.map(v => `<tr><td style="font-family:'DM Mono',monospace">${v.ListingID}</td><td>${v.PropertyType}</td><td>${v.District}</td><td>${badge(v.viewing_count + ' viewing(s)')}</td></tr>`).join('')}</tbody></table>`;
+    document.getElementById('report-hierarchy').innerHTML = `
+      <table><thead><tr><th>Employee</th><th>Level</th><th>Reports To</th></tr></thead>
+      <tbody>${hierarchy.data.map(h => `<tr><td>${h.employee}</td><td>${badge(h.emp_level)}</td><td>${h.reports_to || '<span style="color:var(--muted)">Top management</span>'}</td></tr>`).join('')}</tbody></table>`;
+  } catch(e) { console.error(e); }
+}
+
+const loaders = { dashboard: loadDashboard, properties: loadProperties, agents: loadAgents, clients: loadClients, listings: loadListings, viewings: loadViewings, transactions: loadTransactions, reports: loadReports };
+
+async function submitProperty() {
+  try {
+    await api('/api/properties', 'POST', { property_type: document.getElementById('p-type').value, city: document.getElementById('p-city').value, district: document.getElementById('p-district').value, area: parseFloat(document.getElementById('p-area').value), asking_price: parseFloat(document.getElementById('p-price').value) });
+    closeModal('modal-property'); loadProperties();
+  } catch(e) { showErr('err-property', e.message); }
+}
+
+async function submitAgent() {
+  try {
+    const mgr = document.getElementById('a-manager').value;
+    await api('/api/agents', 'POST', { office_id: parseInt(document.getElementById('a-office').value), name: document.getElementById('a-name').value, email: document.getElementById('a-email').value, manager_id: mgr ? parseInt(mgr) : null, level: document.getElementById('a-level').value });
+    closeModal('modal-agent'); loadAgents();
+  } catch(e) { showErr('err-agent', e.message); }
+}
+
+async function submitClient() {
+  try {
+    await api('/api/clients', 'POST', { name: document.getElementById('c-name').value, phone: document.getElementById('c-phone').value, mail: document.getElementById('c-mail').value, client_type: document.getElementById('c-type').value, reg_date: document.getElementById('c-date').value });
+    closeModal('modal-client'); loadClients();
+  } catch(e) { showErr('err-client', e.message); }
+}
+
+async function submitListing() {
+  try {
+    const prop = parseInt(document.getElementById('l-prop').value);
+    const agent = parseInt(document.getElementById('l-agent').value);
+    const owner = parseInt(document.getElementById('l-owner').value);
+    const price = parseFloat(document.getElementById('l-price').value);
+    const date = document.getElementById('l-date').value;
+    if (!prop || !agent || !owner || !price || !date) { showErr('err-listing', 'Please fill in all fields'); return; }
+    await api('/api/listings', 'POST', { property_id: prop, agent_id: agent, owner_id: owner, start_date: date, listing_price: price });
+    closeModal('modal-listing'); loadListings();
+  } catch(e) { showErr('err-listing', e.message); }
+}
+
+async function submitViewing() {
+  try {
+    const listing = parseInt(document.getElementById('v-listing').value);
+    const client = parseInt(document.getElementById('v-client').value);
+    const agent = parseInt(document.getElementById('v-agent').value);
+    const date = document.getElementById('v-date').value;
+    if (!listing || !client || !agent || !date) { showErr('err-viewing', 'Please fill in all fields'); return; }
+    await api('/api/viewings', 'POST', { listing_id: listing, client_id: client, agent_id: agent, viewing_date: date, feedback: document.getElementById('v-feedback').value });
+    closeModal('modal-viewing'); loadViewings();
+  } catch(e) { showErr('err-viewing', e.message); }
+}
+
+async function submitTransaction() {
+  try {
+    const listing = parseInt(document.getElementById('tr-listing').value);
+    const buyer = parseInt(document.getElementById('tr-buyer').value);
+    const agent = parseInt(document.getElementById('tr-agent').value);
+    const amount = parseFloat(document.getElementById('tr-amount').value);
+    const date = document.getElementById('tr-date').value;
+    if (!listing || !buyer || !agent || !amount || !date) { showErr('err-transaction', 'Please fill in all fields'); return; }
+    await api('/api/transactions', 'POST', { listing_id: listing, buyer_id: buyer, agent_id: agent, amount, transaction_date: date });
+    closeModal('modal-transaction');
+    loadProperties(); loadListings(); loadTransactions(); loadDashboard();
+  } catch(e) { showErr('err-transaction', e.message); }
+}
+
+
+async function sellProperty(propertyId) {
+  await fillTransactionDropdowns();
+  const {data: fullListings} = await api('/api/listings');
+  const match = fullListings.find(l => l.Status === 'Active');
+  if (match) {
+    setTimeout(() => {
+      const sel = document.getElementById('tr-listing');
+      for (let o of sel.options) {
+        if (parseInt(o.value) === match.ListingID) { o.selected = true; break; }
+      }
+    }, 100);
+  }
+  document.getElementById('tr-amount').value = '';
+  document.getElementById('tr-date').value = new Date().toISOString().split('T')[0];
+  document.getElementById('modal-transaction').classList.add('open');
+}
+
+async function deleteProperty(id) { if(confirm('Delete this property?')) { await api('/api/properties/'+id,'DELETE'); loadProperties(); } }
+async function deleteAgent(id) { if(confirm('Delete this agent?')) { await api('/api/agents/'+id,'DELETE'); loadAgents(); } }
+async function deleteClient(id) { if(confirm('Delete this client?')) { await api('/api/clients/'+id,'DELETE'); loadClients(); } }
+async function deleteListing(id) { if(confirm('Delete this listing?')) { await api('/api/listings/'+id,'DELETE'); loadListings(); } }
+async function deleteViewing(id) { if(confirm('Delete this viewing?')) { await api('/api/viewings/'+id,'DELETE'); loadViewings(); } }
+
+const today = new Date().toISOString().split('T')[0];
+document.getElementById('c-date').value = today;
+document.getElementById('l-date').value = today;
+document.getElementById('v-date').value = today;
+document.getElementById('tr-date').value = today;
+loadDashboard();
+</script>
+</body>
+</html>

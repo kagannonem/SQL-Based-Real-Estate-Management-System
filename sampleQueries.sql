@@ -1,68 +1,137 @@
 
+-- 1. LEFT JOIN + AGGREGATION + GROUP BY
 
--- Sample Query with Aggregation, LEFT JOIN and GROUP BY
--- This query returns each agent's total number of listings 
--- and the average sale price of their closed transactions.
 
-SELECT a.agent_name,
-       COUNT(l.listing_id) AS total_listings,
-       AVG(t.transaction_amount) AS avg_sale_price
-FROM agent a
-LEFT JOIN listing l ON a.agent_id = l.agent_id
-LEFT JOIN [transaction] t ON l.listing_id = t.listing_id
-GROUP BY a.agent_name
+SELECT 
+    a.AgentName,
+    COUNT(l.ListingID)      AS total_listings,
+    AVG(t.Amount)           AS avg_sale_price
+FROM Agents a
+LEFT JOIN Listings l     ON a.AgentID = l.AgentID
+LEFT JOIN Transactions t ON l.ListingID = t.ListingID
+GROUP BY a.AgentName
 ORDER BY avg_sale_price DESC;
 
--- Sample Query with VIEW, JULIANDAY
--- This view returns all active listings that have been open
--- for more than 30 days. These are considered "stale" 
--- and may show a pricing issue or lack of agent attention.
 
-CREATE VIEW StaleListings AS
+
+-- 2. AGGREGATION + GROUP BY + HAVING
+--    En az 1 viewing almış listingleri filtrele
+--    (HAVING, GROUP BY sonrası filtreleme yapar — WHERE'den farkı bu)
+
+
+SELECT 
+    l.ListingID,
+    p.PropertyType,
+    p.District,
+    COUNT(v.ViewingID) AS total_viewings
+FROM Listings l
+JOIN Properties p ON l.PropertyID = p.PropertyID
+LEFT JOIN Viewings v ON l.ListingID = v.ListingID
+GROUP BY l.ListingID, p.PropertyType, p.District
+HAVING COUNT(v.ViewingID) >= 1
+ORDER BY total_viewings DESC;
+
+
+-- 3. VIEW — Stale (Uzun Süredir Açık) İlanlar
+
+
+CREATE VIEW IF NOT EXISTS StaleListings AS
 SELECT
-    l.listing_id,
-    p.type AS property_type,
-    p.district,
-    p.asking_price,
-    a.agent_name,
-    o.office_name,
-    l.start_date,
-    CAST(JULIANDAY('now') - JULIANDAY(l.start_date) AS INTEGER) AS days_open
-FROM listing l
-JOIN properties p ON l.property_id = p.property_id
-JOIN agents a ON l.agent_id = a.agent_id
-JOIN offices o ON a.office_id = o.office_id
-WHERE l.status = 'active'
-  AND CAST(JULIANDAY('now') - JULIANDAY(l.start_date) AS INTEGER) > 30;
+    l.ListingID,
+    p.PropertyType,
+    p.District,
+    p.AskingPrice,
+    a.AgentName,
+    o.OfficeName,
+    l.StartDate,
+    CAST(JULIANDAY('now') - JULIANDAY(l.StartDate) AS INTEGER) AS days_open
+FROM Listings l
+JOIN Properties p ON l.PropertyID = p.PropertyID
+JOIN Agents a     ON l.AgentID = a.AgentID
+JOIN Offices o    ON a.OfficeID = o.OfficeID
+WHERE l.Status = 'Active'
+  AND CAST(JULIANDAY('now') - JULIANDAY(l.StartDate) AS INTEGER) > 30;
 
--- Sample Query with CTEs, Aggregations.
--- This query calculates each agent's viewing-to-deal conversion rate.
--- Two separate CTEs are used to count viewings and closed deals
--- independently, then joined together to compute the final ratio.
+-- View'i kullanmak için:
+SELECT * FROM StaleListings;
+
+
+
+-- 4. CTE — Agent Viewing-to-Deal Dönüşüm Oranı
+
 
 WITH AgentViewings AS (
     SELECT
-        agent_id,
-        COUNT(viewing_id) AS total_viewings
-    FROM viewings
-    GROUP BY agent_id
+        AgentID,
+        COUNT(ViewingID) AS total_viewings
+    FROM Viewings
+    GROUP BY AgentID
 ),
 AgentDeals AS (
     SELECT
-        l.agent_id,
-        COUNT(t.transaction_id) AS total_deals
-    FROM transactions t
-    JOIN listing l ON t.listing_id = l.listing_id
-    GROUP BY l.agent_id
+        l.AgentID,
+        COUNT(t.TransactionID) AS total_deals
+    FROM Transactions t
+    JOIN Listings l ON t.ListingID = l.ListingID
+    GROUP BY l.AgentID
 )
 SELECT
-    a.agent_name,
-    av.total_viewings,
-    ad.total_deals,
+    a.AgentName,
+    COALESCE(av.total_viewings, 0) AS total_viewings,
+    COALESCE(ad.total_deals, 0)    AS total_deals,
     ROUND(
-        CAST(ad.total_deals AS REAL) / av.total_viewings * 100, 1
-    ) AS conversion_rate
-FROM agents a
-JOIN AgentViewings av   ON a.agent_id = av.agent_id
-LEFT JOIN AgentDeals ad ON a.agent_id = ad.agent_id
-ORDER BY conversion_rate DESC;
+        CAST(COALESCE(ad.total_deals, 0) AS REAL) 
+        / NULLIF(av.total_viewings, 0) * 100, 1
+    ) AS conversion_rate_pct
+FROM Agents a
+LEFT JOIN AgentViewings av ON a.AgentID = av.AgentID
+LEFT JOIN AgentDeals ad    ON a.AgentID = ad.AgentID
+ORDER BY conversion_rate_pct DESC;
+
+
+-- 5. SELF JOIN — Yönetim Hiyerarşisi
+--    Her çalışanın kendi yöneticisiyle eşleştirilmesi.
+
+SELECT
+    subordinate.AgentName   AS employee_name,
+    subordinate.Level       AS employee_level,
+    manager.AgentName       AS reports_to_manager,
+    manager.Level           AS manager_level
+FROM Agents subordinate
+LEFT JOIN Agents manager ON subordinate.ManagerID = manager.AgentID
+ORDER BY manager.AgentName, subordinate.AgentName;
+
+
+-- 6. SUBQUERY — Hiç Satılmamış Mülkler
+--    Transactions tablosunda hiç yer almamış listing'lere
+--    bağlı mülkleri bul. (NOT IN ile subquery kullanımı)
+
+SELECT
+    p.PropertyID,
+    p.PropertyType,
+    p.District,
+    p.AskingPrice,
+    p.Status
+FROM Properties p
+WHERE p.PropertyID NOT IN (
+    SELECT l.PropertyID
+    FROM Listings l
+    JOIN Transactions t ON l.ListingID = t.ListingID
+)
+ORDER BY p.AskingPrice DESC;
+
+
+-- 7. SUBQUERY — Ortalamanın Üzerinde Fiyatlı Mülkler
+--    Tüm mülklerin ortalama fiyatını subquery ile hesaplayıp
+--    bunun üzerindeki mülkleri listele.
+
+SELECT
+    PropertyType,
+    City,
+    District,
+    AskingPrice
+FROM Properties
+WHERE AskingPrice > (
+    SELECT AVG(AskingPrice) FROM Properties
+)
+ORDER BY AskingPrice DESC;

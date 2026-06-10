@@ -136,7 +136,7 @@ The schema follows a normalized relational design. Key tables include:
 - `agents` — agent profiles linked to users
 - `assignments` — maps agents to properties
 
-See [`sql/schema.sql`](sql/schema.sql) for the full schema definition.
+See Real Estate Management System Milestone Report for the full schema definition.
 
 ---
 
@@ -151,12 +151,6 @@ See [`sql/schema.sql`](sql/schema.sql) for the full schema definition.
 ## Contributing
 
 This is a university group project. Contributions from team members should be made via feature branches and pull requests targeting `main`.
-
----
-
-## License
-
-This project is for educational purposes. See [LICENSE](LICENSE) for details.
 
 ---
 

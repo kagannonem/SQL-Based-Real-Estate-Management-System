@@ -2,6 +2,10 @@
 
 A full-stack real estate management application built with a PostgreSQL database, FastAPI backend, and HTML/JavaScript frontend. Developed as a university group project for the Mathematical Engineering department at Yıldız Technical University.
 
+## Project Presentation (Youtube)
+
+https://youtu.be/PeJ8YyknqnI
+
 ---
 
 ## Features
@@ -153,7 +157,3 @@ See Real Estate Management System Milestone Report for the full schema definitio
 This is a university group project. Contributions from team members should be made via feature branches and pull requests targeting `main`.
 
 ---
-
-## Project Presentation (Youtube)
-
-https://youtu.be/PeJ8YyknqnI

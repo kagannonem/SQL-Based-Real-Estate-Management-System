@@ -1,10 +1,7 @@
 # SQL-Based Real Estate Management System
 
 Contributors:
-21052012 Efe Kağan Önem 
-22058033 Ece Naz Özbucak
-22058053 Suna Seyrek
-21058072 Zekiye Miray Karagöz
+21052012 Efe Kağan Önem || 22058033 Ece Naz Özbucak || 22058053 Suna Seyrek || 21058072 Zekiye Miray Karagöz
 
 A full-stack real estate management application built with a PostgreSQL database, FastAPI backend, and HTML/JavaScript frontend. Developed as a university group project for the Mathematical Engineering department at Yıldız Technical University.
 
